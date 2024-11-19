@@ -21,9 +21,10 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/inde
     const chainId = await hre.getChainId()
     if (chainId.match(/1337/) == null) {
       console.log('chainid=', chainId)
-      await hre.run('etherscan-verify')
+      // await hre.run('etherscan-verify')
     }
   }
+  
   const [entryPointAddress, testCounterAddress, accountFactoryAddress] = await Promise.all([
     hre.deployments.get('EntryPoint').then(d => d.address),
     hre.deployments.get('TestCounter').then(d => d.address),
@@ -53,12 +54,15 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/inde
   const index = parseInt(process.env.AA_INDEX ?? '0')
   console.log('using account index (AA_INDEX)', index)
   const aasigner = new AASigner(ethersSigner, entryPointAddress, sendUserOp, accountFactoryAddress, index)
+  // console.log('aasigner', aasigner)
   // connect to pre-deployed account
   // await aasigner.connectAccountAddress(accountAddress)
   const myAddress = await aasigner.getAddress()
-  if (await provider.getBalance(myAddress) < parseEther('0.01')) {
+  const myBalance = await provider.getBalance(myAddress)
+  // await ethersSigner.sendTransaction({ to: myAddress, value: parseEther('0.1') })
+  if (myBalance < parseEther('0.1')) {
     console.log('prefund account')
-    await ethersSigner.sendTransaction({ to: myAddress, value: parseEther('0.01') })
+    await ethersSigner.sendTransaction({ to: myAddress, value: parseEther('0.1') })
   }
 
   // usually, an account will deposit for itself (that is, get created using eth, run "addDeposit" for itself
@@ -80,7 +84,10 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/inde
   const prebalance = await provider.getBalance(myAddress)
   console.log('balance=', prebalance.div(1e9).toString(), 'deposit=', preDeposit.div(1e9).toString())
   console.log('estimate direct call', { gasUsed: await testCounter.connect(ethersSigner).estimateGas.justemit().then(t => t.toNumber()) })
-  const ret = await testCounter.justemit()
+  const gasPrice = ethers.utils.parseUnits("50", "gwei"); // Set to 25 Gwei
+  const ret = await testCounter.justemit({ gasPrice });
+  // const ret = await testCounter.justemit()
+
   console.log('waiting for mine, hash (reqId)=', ret.hash)
   const rcpt = await ret.wait()
   const netname = await provider.getNetwork().then(net => net.name)
@@ -94,7 +101,8 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/inde
   console.log(logs.map((e: any) => ({ ev: e.event, ...objdump(e.args!) })))
   console.log('1st run gas used:', await evInfo(rcpt))
 
-  const ret1 = await testCounter.justemit()
+  
+  const ret1 = await testCounter.justemit({ gasPrice })
   const rcpt2 = await ret1.wait()
   console.log('2nd run:', await evInfo(rcpt2))
 

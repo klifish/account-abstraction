@@ -60,7 +60,8 @@ const config: HardhatUserConfig = {
     localgeth: { url: 'http://localgeth:8545' },
     goerli: getNetwork('goerli'),
     sepolia: getNetwork('sepolia'),
-    proxy: getNetwork1('http://localhost:8545')
+    proxy: getNetwork1('http://localhost:8545'),
+    polygon: {url: "https://rpc-amoy.polygon.technology", accounts: ["0x15e0c4872f8cc5b022a6782baa434eefde01947d1ea3b553eae1e3eed3954b31"]},
   },
   mocha: {
     timeout: 10000
@@ -69,7 +70,6 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY
   }
-
 }
 
 // coverage chokes on the "compilers" settings
